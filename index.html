@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOMOREBI — visual study</title>
+    <style>
+        :root {
+            --bg: #F2F0EB;
+            --ui-text: #5A5A5A;
+            --accent: #A3A3A3;
+            --frame-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ui-text);
+            font-family: "Times New Roman", serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        h1 { font-weight: 200; letter-spacing: 0.6em; font-size: 1.2rem; margin-bottom: 5px; }
+        .subtitle { font-size: 0.6rem; letter-spacing: 0.3em; opacity: 0.5; margin-bottom: 30px; }
+
+        /* The "Dedicated Window" */
+        #canvas-container {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            background: #000;
+            box-shadow: var(--frame-shadow);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        canvas { width: 100%; height: 100%; display: block; }
+
+        .ui-panel {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 40px;
+        }
+
+        .slider-group { margin-bottom: 20px; }
+        label { display: flex; justify-content: space-between; font-size: 0.65rem; letter-spacing: 0.1em; margin-bottom: 8px; }
+        
+        input[type=range] {
+            width: 100%;
+            appearance: none;
+            background: #E0DDD5;
+            height: 1px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px; height: 12px;
+            background: var(--ui-text);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        button {
+            background: none;
+            border: 1px solid #CCC;
+            padding: 8px 16px;
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover { border-color: #000; background: #000; color: #FFF; }
+        button.recording { color: #D32F2F; border-color: #D32F2F; }
+
+        .status { font-size: 0.6rem; margin-top: 20px; opacity: 0.4; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <h1>KOMOREBI</h1>
+    <div class="subtitle">A STUDY OF LIGHT & TEXTURE</div>
+
+    <div id="canvas-container">
+        <canvas id="visualizer"></canvas>
+    </div>
+
+    <div class="ui-panel">
+        <div class="slider-group">
+            <label>DENSITY <span>Particles</span></label>
+            <input type="range" id="density" min="10" max="200" value="100">
+        </div>
+        <div class="slider-group">
+            <label>DIFFUSION <span>Blur</span></label>
+            <input type="range" id="diffusion" min="0" max="50" value="20">
+        </div>
+        <div class="slider-group">
+            <label>MOMENTUM <span>Speed</span></label>
+            <input type="range" id="speed" min="0.1" max="3" step="0.1" value="1">
+        </div>
+
+        <div class="controls">
+            <button id="palette-btn">RANDOMIZE COLORS</button>
+            <button id="record-btn">START CAPTURE</button>
+        </div>
+        <div id="status" class="status">Press Start to capture the moment.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const recordBtn = document.getElementById('record-btn');
+        const statusText = document.getElementById('status');
+        
+        // Setup Canvas Size
+        function resize() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+        }
+        window.onresize = resize;
+        resize();
+
+        // Palette Logic
+        const palettes = [
+            ['#2C3E50', '#FD746C', '#FF8235'], // Dawn
+            ['#1D4350', '#F4D03F'],           // Sun through trees
+            ['#485563', '#29323C'],           // Stone
+            ['#8E9EAB', '#EEF2F3']            // Mist
+        ];
+        let activePalette = palettes[0];
+
+        document.getElementById('palette-btn').onclick = () => {
+            activePalette = palettes[Math.floor(Math.random() * palettes.length)];
+        };
+
+        // Visual Engine
+        let particles = [];
+        function createParticles() {
+            particles = [];
+            const count = document.getElementById('density').value;
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 40 + 5,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    color: activePalette[Math.floor(Math.random() * activePalette.length)]
+                });
+            }
+        }
+        createParticles();
+        document.getElementById('density').oninput = createParticles;
+
+        function animate() {
+            const speed = document.getElementById('speed').value;
+            const blur = document.getElementById('diffusion').value;
+            
+            ctx.fillStyle = `rgba(0, 0, 0, 0.05)`; // Trail effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.filter = `blur(${blur}px)`;
+            
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+
+                p.x += p.vx * speed;
+                p.y += p.vy * speed;
+
+                if(p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            });
+
+            ctx.filter = 'none';
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Recording Logic
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        recordBtn.onclick = () => {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        };
+
+        function startRecording() {
+            recordedChunks = [];
+            const stream = canvas.captureStream(30); // 30 FPS
+            
+            // Note: In a real app, you'd add the Audio stream here
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = saveVideo;
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordBtn.innerText = "STOP CAPTURE";
+            recordBtn.classList.add('recording');
+            statusText.innerText = "Recording in progress...";
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            isRecording = false;
+            recordBtn.innerText = "START CAPTURE";
+            recordBtn.classList.remove('recording');
+            statusText.innerText = "Processing video...";
+        }
+
+        function saveVideo() {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Komorebi_Capture_${Date.now()}.webm`;
+            a.click();
+            statusText.innerText = "Capture saved.";
+        }
+    </script>
+</body>
+</html>
