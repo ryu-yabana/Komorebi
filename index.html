@@ -4,296 +4,212 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KOMOREBI — visual study</title>
-
 <style>
-:root { --bg:#F2F0EB; --ui-text:#5A5A5A; }
+    :root { --bg:#F2F0EB; --ui-text:#5A5A5A; --accent:#8c8c8c; }
+    body { background:var(--bg); color:var(--ui-text); font-family:"Times New Roman",serif; margin:0; display:flex; flex-direction:column; align-items:center; padding:20px; }
+    h1 { font-weight:200; letter-spacing:0.6em; font-size:1.2rem; margin-bottom: 5px; }
+    .subtitle { font-size:0.6rem; letter-spacing:0.3em; opacity:0.5; margin-bottom:20px; }
+    
+    #canvas-container { width:100%; max-width:800px; aspect-ratio:16/9; background:#000; box-shadow:0 20px 50px rgba(0,0,0,0.1); position: relative; }
+    canvas { width:100%; height:100%; display: block; }
+    
+    .ui-panel { width:100%; max-width:800px; margin-top:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .controls-group { display:flex; flex-direction: column; gap:10px; }
+    .slider-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.6rem; letter-spacing: 0.1em; }
+    input[type=range] { width: 60%; accent-color: var(--ui-text); }
 
-body {
-    background:var(--bg);
-    color:var(--ui-text);
-    font-family:"Times New Roman",serif;
-    margin:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:20px;
-}
-
-h1 { font-weight:200; letter-spacing:0.6em; font-size:1.2rem; margin-bottom:5px; }
-.subtitle { font-size:0.6rem; letter-spacing:0.3em; opacity:0.5; margin-bottom:20px; }
-
-#canvas-container {
-    width:100%;
-    max-width:800px;
-    aspect-ratio:16/9;
-    background:#000;
-    box-shadow:0 20px 50px rgba(0,0,0,0.1);
-}
-
-canvas { width:100%; height:100%; display:block; }
-
-.ui-panel {
-    width:100%;
-    max-width:800px;
-    margin-top:20px;
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
-}
-
-.controls-group { display:flex; flex-direction:column; gap:10px; }
-
-.slider-row {
-    display:flex;
-    justify-content:space-between;
-    font-size:0.6rem;
-}
-
-input[type=range] { width:60%; }
-
-.buttons { display:flex; flex-wrap:wrap; gap:8px; }
-
-button {
-    border:1px solid #CCC;
-    padding:6px 10px;
-    background:none;
-    cursor:pointer;
-    font-size:0.55rem;
-}
-
-#signature {
-    margin-top:30px;
-    font-size:0.7rem;
-    opacity:0.6;
-}
+    .buttons { display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
+    button { border:1px solid #CCC; padding:6px 10px; background:none; cursor:pointer; font-size:0.55rem; letter-spacing:0.1em; transition: 0.3s; color: var(--ui-text); }
+    button:hover { background: #eee; }
+    
+    #signature { margin-top: 30px; font-size: 0.7rem; letter-spacing: 0.15em; text-decoration: none; color: var(--ui-text); opacity: 0.6; transition: opacity 0.3s ease; }
+    #signature:hover { opacity: 1; }
 </style>
 </head>
-
 <body>
 
 <h1>KOMOREBI</h1>
 <div class="subtitle">LIGHT & SOUND</div>
 
-<div id="canvas-container">
-<canvas id="visualizer"></canvas>
-</div>
+<div id="canvas-container"><canvas id="visualizer"></canvas></div>
 
 <div class="ui-panel">
-
-<div class="controls-group">
-    <div class="slider-row">CHAOS <input type="range" id="chaos" min="0.1" max="5" step="0.1" value="1"></div>
-    <div class="slider-row">SCALE <input type="range" id="scale" min="1" max="10" step="0.5" value="3"></div>
-    <div class="slider-row">DIFFUSION <input type="range" id="diff" min="0.01" max="0.3" step="0.01" value="0.05"></div>
-
-    <div class="buttons">
-        <input type="file" id="file" accept="audio/*" hidden>
-        <button onclick="file.click()">IMPORT AUDIO</button>
-        <button id="reset">BACK TO START</button>
-        <button id="stop">STOP</button>
+    <div class="controls-group">
+        <div class="slider-row"><span>CHAOS</span> <input type="range" id="chaos-slider" min="0.1" max="5" step="0.1" value="1"></div>
+        <div class="slider-row"><span>SCALE</span> <input type="range" id="scale-slider" min="1" max="10" step="0.5" value="3"></div>
+        <div class="slider-row"><span>DIFFUSION</span> <input type="range" id="diff-slider" min="0.01" max="0.3" step="0.01" value="0.05"></div>
+        <div class="buttons">
+            <input type="file" id="file-input" accept="audio/*" style="display:none">
+            <button onclick="document.getElementById('file-input').click()">IMPORT AUDIO</button>
+            <button id="reset-audio">BACK TO START</button>
+            <button id="stop-audio">STOP</button>
+        </div>
     </div>
-</div>
 
-<div class="controls-group">
-    <div class="buttons">
-        <button id="mode">CHANGE MODE</button>
-        <button id="palette">PALETTE</button>
-        <button id="record" style="color:#a33">RECORD</button>
+    <div class="controls-group">
+        <div class="buttons">
+            <button id="mode-btn">CHANGE SHAPE</button>
+            <button id="palette-btn">RANDOM PALETTE</button>
+            <button id="record-btn" style="color: #a33; border-color: #a33;">RECORD</button>
+        </div>
+        <p style="font-size: 0.5rem; opacity: 0.6;">* To start recording from the beginning, click RECORD then BACK TO START.</p>
     </div>
-</div>
-
 </div>
 
 <a id="signature" href="https://ryu-yabana.github.io/" target="_blank">Ryu Yabana ↗</a>
 
 <script>
-const canvas = document.getElementById("visualizer");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById('visualizer');
+const ctx=canvas.getContext('2d');
+const chaosSlider = document.getElementById('chaos-slider');
+const scaleSlider = document.getElementById('scale-slider');
+const diffSlider = document.getElementById('diff-slider');
 
-canvas.width = 1920;
-canvas.height = 1080;
+function resize(){
+    canvas.width=1920; 
+    canvas.height=1080;
+}
+resize();
 
 let audioCtx, analyser, dataArray, sourceNode, audioTag;
-
-function initAudio(){
-    if(!audioCtx){
-        audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 512;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
     }
 }
 
-file.onchange = e=>{
+document.getElementById('file-input').onchange=e=>{
     initAudio();
+    const file=e.target.files[0];
     if(audioTag) audioTag.pause();
-    audioTag = new Audio(URL.createObjectURL(e.target.files[0]));
+    audioTag = new Audio(URL.createObjectURL(file));
+    audioTag.crossOrigin = "anonymous";
     sourceNode = audioCtx.createMediaElementSource(audioTag);
     sourceNode.connect(analyser);
     analyser.connect(audioCtx.destination);
     audioTag.play();
 };
 
-reset.onclick = ()=> audioTag && (audioTag.currentTime=0, audioTag.play());
-stop.onclick = ()=> audioTag && audioTag.pause();
+document.getElementById('reset-audio').onclick=()=> { if(audioTag){ audioTag.currentTime = 0; audioTag.play(); }};
+document.getElementById('stop-audio').onclick=()=> { if(audioTag) audioTag.pause(); };
 
 function getLevels(){
-    if(!analyser) return {low:0,mid:0,high:0};
+    if(!analyser) return {low:0, mid:0, high:0};
     analyser.getByteFrequencyData(dataArray);
-
-    let l=0,m=0,h=0;
-    let third = dataArray.length/3;
-
-    for(let i=0;i<dataArray.length;i++){
-        if(i<third) l+=dataArray[i];
-        else if(i<third*2) m+=dataArray[i];
-        else h+=dataArray[i];
+    let l=0, m=0, h=0;
+    let third = Math.floor(dataArray.length/3);
+    for(let i=0; i<dataArray.length; i++){
+        if(i < third) l += dataArray[i];
+        else if(i < third*2) m += dataArray[i];
+        else h += dataArray[i];
     }
-
-    return {
-        low:l/(third*255),
-        mid:m/(third*255),
-        high:h/(third*255)
-    };
+    return {low: l/(third*255), mid: m/(third*255), high: h/(third*255)};
 }
 
-/* PEAK DETECTION */
-let last = 0;
-function isPeak(level){
-    let peak = level > 0.6 && last < 0.4;
-    last = level;
-    return peak;
-}
-
-/* PALETTES */
-const palettes = [
-['#FADADD','#F6C6C6','#FFF0F5'],
-['#1A1A1B','#3C3C3C','#707070'],
-['#A8DADC','#457B9D','#1D3557'],
-['#D4A373','#CCD5AE','#E9EDC9']
+const palettes=[
+    ['#FADADD','#F6C6C6','#FFF0F5'], ['#1A1A1B','#3C3C3C','#707070'],
+    ['#A8DADC','#457B9D','#1D3557'], ['#D4A373','#CCD5AE','#E9EDC9'],
+    ['#E0FBFC','#C2DFE3','#5C6B73'], ['#264653','#2A9D8F','#E9C46A']
 ];
+let palette=palettes[0];
+let mode=0; 
 
-let palette = palettes[0];
-paletteBtn.onclick = ()=> palette = palettes[Math.floor(Math.random()*palettes.length)];
+document.getElementById('palette-btn').onclick=()=>{ palette=palettes[Math.floor(Math.random()*palettes.length)]; };
+document.getElementById('mode-btn').onclick=()=>{ mode=(mode+1)%3; };
 
-/* MODES */
-let modeIndex = 0;
-mode.onclick = ()=> modeIndex = (modeIndex+1)%3;
-
-/* PARTICLES */
-let particles = [];
-
+let particles=[];
 function createParticles(){
     particles=[];
-    for(let i=0;i<140;i++){
+    for(let i=0;i<120;i++){
         particles.push({
-            x:Math.random()*canvas.width,
-            y:Math.random()*canvas.height,
-            vx:(Math.random()-.5)*2,
-            vy:(Math.random()-.5)*2,
-            size:Math.random()*20+10,
-            z:Math.random(),
-            angle:Math.random()*Math.PI*2
+            x:Math.random()*canvas.width, y:Math.random()*canvas.height,
+            vx:(Math.random()-.5)*2, vy:(Math.random()-.5)*2,
+            size:Math.random()*30+10,
+            angle: Math.random() * Math.PI * 2
         });
     }
 }
 createParticles();
 
-/* DRAW */
 function draw(){
-
     const levels = getLevels();
-    const chaos = chaosSlider.value;
-    const scale = scaleSlider.value;
-    const diff = diffSlider.value;
+    const chaos = parseFloat(chaosSlider.value);
+    const scale = parseFloat(scaleSlider.value);
+    const diff = parseFloat(diffSlider.value);
 
-    ctx.fillStyle = `rgba(0,0,0,${diff*0.6})`;
+    ctx.fillStyle = `rgba(0,0,0,${diff})`;
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    if(isPeak(levels.high)){
-        palette = palettes[Math.floor(Math.random()*palettes.length)];
-        particles.forEach(p=>{
-            p.vx *= 3;
-            p.vy *= 3;
-        });
-    }
-
-    particles.forEach((p,i)=>{
-
-        let depth = 0.5 + p.z;
-        let size = p.size * scale * depth + levels.low*120;
-
-        ctx.globalAlpha = 0.1 + levels.high*0.7;
-        ctx.fillStyle = palette[i % palette.length];
-
+    particles.forEach((p, i)=>{
         ctx.beginPath();
-        ctx.arc(p.x,p.y,size,0,Math.PI*2);
-        ctx.fill();
+        let currentSize = (p.size * scale) + (levels.low * 150);
+        ctx.fillStyle = palette[i % palette.length];
+        ctx.globalAlpha = 0.1 + (levels.high * 0.8);
 
-        /* MODES */
-        if(modeIndex === 0){ // FLOAT
-            p.x += p.vx * chaos;
-            p.y += p.vy * chaos;
-
-        } else if(modeIndex === 1){ // ORBIT
-            p.angle += 0.01 + levels.mid*0.1;
-            p.x += Math.cos(p.angle) * 2;
-            p.y += Math.sin(p.angle) * 2;
-
-        } else { // BURST
-            p.x += p.vx * chaos * (1 + levels.high*5);
-            p.y += p.vy * chaos * (1 + levels.high*5);
+        if(mode === 0) { 
+            ctx.arc(p.x, p.y, currentSize, 0, Math.PI*2);
+        } else if (mode === 1) { 
+            ctx.rect(p.x - currentSize, p.y - currentSize, currentSize*2, currentSize*2);
+        } else { 
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + (levels.mid * 400), p.y + (levels.high * 400));
+            ctx.lineWidth = levels.low * 10;
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.stroke();
         }
+        
+        if(mode !== 2) ctx.fill();
 
-        if(p.x<0) p.x=canvas.width;
-        if(p.x>canvas.width) p.x=0;
-        if(p.y<0) p.y=canvas.height;
-        if(p.y>canvas.height) p.y=0;
+        p.x += p.vx * chaos * (1 + levels.mid * 5);
+        p.y += p.vy * chaos * (1 + levels.mid * 5);
+
+        if(p.x<0) p.x=canvas.width; if(p.x>canvas.width) p.x=0;
+        if(p.y<0) p.y=canvas.height; if(p.y>canvas.height) p.y=0;
     });
-
-    ctx.globalAlpha = 1;
+    
+    ctx.globalAlpha=1;
     requestAnimationFrame(draw);
 }
 draw();
 
-/* RECORD */
-let recorder, chunks=[], recording=false;
+let recorder, chunks=[];
+let recording=false;
 
-record.onclick = function(){
-
+document.getElementById('record-btn').onclick=function(){
     if(!recording){
-
         const stream = canvas.captureStream(60);
         const dest = audioCtx.createMediaStreamDestination();
-        sourceNode && sourceNode.connect(dest);
+        if(sourceNode) sourceNode.connect(dest);
 
-        const combined = new MediaStream([
-            ...stream.getVideoTracks(),
-            ...dest.stream.getAudioTracks()
-        ]);
-
-        recorder = new MediaRecorder(combined);
+        const combined = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+        recorder = new MediaRecorder(combined, { mimeType: 'video/webm;codecs=vp9' });
 
         recorder.ondataavailable = e => chunks.push(e.data);
-        recorder.onstop = ()=>{
-            const blob = new Blob(chunks);
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, {type:'video/webm'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = "komorebi.webm";
+            a.download = 'komorebi_session.webm';
             a.click();
         };
 
         recorder.start();
-        chunks=[];
-        recording=true;
-        this.innerText="STOP";
-
+        chunks = [];
+        recording = true;
+        this.innerText = 'STOP RECORDING';
+        this.style.background = '#a33';
+        this.style.color = '#fff';
     } else {
         recorder.stop();
-        recording=false;
-        this.innerText="RECORD";
+        recording = false;
+        this.innerText = 'RECORD';
+        this.style.background = 'none';
+        this.style.color = '#a33';
     }
 };
 </script>
-
 </body>
 </html>
