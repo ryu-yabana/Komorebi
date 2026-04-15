@@ -5,226 +5,155 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KOMOREBI — visual study</title>
 <style>
-:root {
-    --bg: #F2F0EB;
-    --ui-text: #5A5A5A;
-}
-
-body {
-    background: var(--bg);
-    color: var(--ui-text);
-    font-family: "Times New Roman", serif;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px 20px;
-}
-
-h1 { font-weight: 200; letter-spacing: 0.6em; font-size: 1.2rem; margin-bottom: 5px; }
-.subtitle { font-size: 0.6rem; letter-spacing: 0.3em; opacity: 0.5; margin-bottom: 30px; }
-
-#canvas-container {
-    width: 100%;
-    max-width: 500px;
-    aspect-ratio: 1 / 1;
-    background: #000;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    position: relative;
-    overflow: hidden;
-}
-
-canvas { width: 100%; height: 100%; display: block; }
-
-.ui-panel {
-    width: 100%;
-    max-width: 500px;
-    margin-top: 40px;
-}
-
-.slider-group { margin-bottom: 20px; }
-label { display: flex; justify-content: space-between; font-size: 0.65rem; letter-spacing: 0.1em; margin-bottom: 8px; }
-
-input[type=range] {
-    width: 100%;
-    appearance: none;
-    background: #E0DDD5;
-    height: 1px;
-}
-
-input[type=range]::-webkit-slider-thumb {
-    appearance: none;
-    width: 12px; height: 12px;
-    background: var(--ui-text);
-    border-radius: 50%;
-}
-
-.controls {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-button {
-    background: none;
-    border: 1px solid #CCC;
-    padding: 8px 16px;
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    cursor: pointer;
-}
-
-.status { font-size: 0.6rem; margin-top: 20px; opacity: 0.4; text-align: center; }
+:root { --bg:#F2F0EB; --ui-text:#5A5A5A; }
+body { background:var(--bg); color:var(--ui-text); font-family:"Times New Roman",serif; margin:0; display:flex; flex-direction:column; align-items:center; padding:40px 20px; }
+h1 { font-weight:200; letter-spacing:0.6em; font-size:1.2rem; }
+.subtitle { font-size:0.6rem; letter-spacing:0.3em; opacity:0.5; margin-bottom:30px; }
+#canvas-container { width:100%; max-width:500px; aspect-ratio:1/1; background:#000; box-shadow:0 10px 30px rgba(0,0,0,0.05); overflow:hidden; }
+canvas { width:100%; height:100%; }
+.ui-panel { width:100%; max-width:500px; margin-top:30px; }
+.controls { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+button,input { font-size:0.6rem; letter-spacing:0.2em; }
+button { border:1px solid #CCC; padding:8px 12px; background:none; cursor:pointer; }
 </style>
 </head>
 <body>
-
 <h1>KOMOREBI</h1>
-<div class="subtitle">A STUDY OF LIGHT & TEXTURE</div>
+<div class="subtitle">LIGHT & SOUND</div>
 
-<div id="canvas-container">
-    <canvas id="visualizer"></canvas>
-</div>
+<div id="canvas-container"><canvas id="visualizer"></canvas></div>
 
 <div class="ui-panel">
-    <div class="slider-group">
-        <label>DENSITY <span>Particles</span></label>
-        <input type="range" id="density" min="20" max="150" value="80">
-    </div>
-    <div class="slider-group">
-        <label>DIFFUSION <span>Light Spread</span></label>
-        <input type="range" id="diffusion" min="0" max="40" value="15">
-    </div>
-    <div class="slider-group">
-        <label>MOMENTUM <span>Drift</span></label>
-        <input type="range" id="speed" min="0.1" max="2" step="0.1" value="0.6">
-    </div>
-
-    <div class="controls">
-        <button id="mic-btn">ENABLE AUDIO</button>
-        <button id="palette-btn">SEASON</button>
-    </div>
-
-    <div id="status" class="status">Waiting for input...</div>
+<div class="controls">
+<input type="file" id="file-input" accept="audio/*">
+<button id="mode-btn">CHANGE MODE</button>
+<button id="palette-btn">PALETTE</button>
+<button id="record-btn">RECORD</button>
+</div>
 </div>
 
 <script>
-const canvas = document.getElementById('visualizer');
-const ctx = canvas.getContext('2d');
+const canvas=document.getElementById('visualizer');
+const ctx=canvas.getContext('2d');
 
-function resize() {
-    canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-    canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-}
-resize();
-window.onresize = resize;
+function resize(){canvas.width=canvas.offsetWidth*devicePixelRatio;canvas.height=canvas.offsetHeight*devicePixelRatio;}resize();window.onresize=resize;
 
-// Seasonal palettes (Dentouiro inspired)
-const seasons = {
-    spring: ['#F6C6C6', '#FADADD', '#F8E8EE'],
-    summer: ['#A8DADC', '#457B9D', '#1D3557'],
-    autumn: ['#D4A373', '#CCD5AE', '#E9EDC9'],
-    winter: ['#E0FBFC', '#C2DFE3', '#5C6B73']
+// AUDIO
+let audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+let analyser=audioCtx.createAnalyser();
+analyser.fftSize=256;
+let dataArray=new Uint8Array(analyser.frequencyBinCount);
+let sourceNode;
+
+// FILE INPUT
+document.getElementById('file-input').onchange=e=>{
+ const file=e.target.files[0];
+ const url=URL.createObjectURL(file);
+ const audio=new Audio(url);
+ audio.crossOrigin="anonymous";
+ audio.loop=true;
+ audio.play();
+ sourceNode=audioCtx.createMediaElementSource(audio);
+ sourceNode.connect(analyser);
+ analyser.connect(audioCtx.destination);
 };
 
-let activePalette = seasons.spring;
+function getLevels(){
+ analyser.getByteFrequencyData(dataArray);
+ let l=0,m=0,h=0;
+ for(let i=0;i<dataArray.length;i++){
+  if(i<dataArray.length*0.33)l+=dataArray[i];
+  else if(i<dataArray.length*0.66)m+=dataArray[i];
+  else h+=dataArray[i];
+ }
+ return {low:l/10000,mid:m/10000,high:h/10000};
+}
 
-document.getElementById('palette-btn').onclick = () => {
-    const keys = Object.keys(seasons);
-    activePalette = seasons[keys[Math.floor(Math.random() * keys.length)]];
+// PALETTES
+const palettes=[
+ ['#FADADD','#F6C6C6','#FFF0F5'],
+ ['#A8DADC','#457B9D','#1D3557'],
+ ['#D4A373','#CCD5AE','#E9EDC9'],
+ ['#E0FBFC','#C2DFE3','#5C6B73']
+];
+let palette=palettes[0];
+
+document.getElementById('palette-btn').onclick=()=>{
+ palette=palettes[Math.floor(Math.random()*palettes.length)];
 };
 
-// Audio setup
-let audioCtx, analyser, dataArray;
-let audioEnabled = false;
+// MODES
+let mode=0;
+document.getElementById('mode-btn').onclick=()=>{mode=(mode+1)%3;};
 
-document.getElementById('mic-btn').onclick = async () => {
-    if (audioEnabled) return;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    const source = audioCtx.createMediaStreamSource(stream);
+// PARTICLES
+let particles=[];
+function init(){particles=[];for(let i=0;i<100;i++){particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5),vy:(Math.random()-.5),size:Math.random()*20+10});}}
+init();
 
-    analyser.fftSize = 256;
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
+function draw(){
+ const a=getLevels();
+ ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    source.connect(analyser);
-    audioEnabled = true;
+ particles.forEach(p=>{
+  ctx.beginPath();
+  let size=p.size+a.low*50;
+  ctx.arc(p.x,p.y,size,0,Math.PI*2);
+  ctx.fillStyle=palette[Math.floor(Math.random()*palette.length)];
+  ctx.globalAlpha=0.2+a.high;
+  ctx.fill();
+
+  let speed=1+a.mid*5;
+  if(mode===1) speed*=2;
+  if(mode===2) speed*=0.3;
+
+  p.x+=p.vx*speed;
+  p.y+=p.vy*speed;
+
+  if(p.x<0||p.x>canvas.width)p.vx*=-1;
+  if(p.y<0||p.y>canvas.height)p.vy*=-1;
+ });
+ ctx.globalAlpha=1;
+ requestAnimationFrame(draw);
+}
+
+draw();
+
+// RECORDING
+let recorder, chunks=[];
+let recording=false;
+
+const btn=document.getElementById('record-btn');
+btn.onclick=()=>{
+ if(!recording){
+  const stream=canvas.captureStream(30);
+  const dest=audioCtx.createMediaStreamDestination();
+  if(sourceNode) sourceNode.connect(dest);
+
+  const combined=new MediaStream([...stream.getTracks(),...dest.stream.getTracks()]);
+  recorder=new MediaRecorder(combined,{mimeType:'video/webm'});
+
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.onstop=()=>{
+   const blob=new Blob(chunks,{type:'video/webm'});
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement('a');
+   a.href=url;
+   a.download='komorebi_capture.webm';
+   a.click();
+  };
+
+  recorder.start();
+  chunks=[];
+  recording=true;
+  btn.innerText='STOP';
+ } else {
+  recorder.stop();
+  recording=false;
+  btn.innerText='RECORD';
+ }
 };
-
-// Particles
-let particles = [];
-function createParticles() {
-    particles = [];
-    const count = document.getElementById('density').value;
-    for (let i = 0; i < count; i++) {
-        particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 30 + 10,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            color: activePalette[Math.floor(Math.random() * activePalette.length)]
-        });
-    }
-}
-createParticles();
-document.getElementById('density').oninput = createParticles;
-
-function getAudioLevels() {
-    if (!audioEnabled) return { low: 0, mid: 0, high: 0 };
-    analyser.getByteFrequencyData(dataArray);
-
-    let low = 0, mid = 0, high = 0;
-    const len = dataArray.length;
-
-    for (let i = 0; i < len; i++) {
-        if (i < len * 0.33) low += dataArray[i];
-        else if (i < len * 0.66) mid += dataArray[i];
-        else high += dataArray[i];
-    }
-
-    return {
-        low: low / len / 255,
-        mid: mid / len / 255,
-        high: high / len / 255
-    };
-}
-
-function animate() {
-    const speed = document.getElementById('speed').value;
-    const blur = document.getElementById('diffusion').value;
-
-    const audio = getAudioLevels();
-
-    ctx.fillStyle = 'rgba(0,0,0,0.03)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.filter = `blur(${blur + audio.low * 20}px)`;
-
-    particles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size + audio.low * 40, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = 0.2 + audio.high;
-        ctx.fill();
-
-        p.x += p.vx * speed * (0.5 + audio.mid * 2);
-        p.y += p.vy * speed * (0.5 + audio.mid * 2);
-
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-    });
-
-    ctx.globalAlpha = 1;
-    ctx.filter = 'none';
-
-    requestAnimationFrame(animate);
-}
-
-animate();
 </script>
-
 </body>
 </html>
+
