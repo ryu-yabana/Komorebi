@@ -19,10 +19,10 @@
     input[type=range] { width: 60%; accent-color: var(--ui-text); }
 
     .buttons { display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
-    button { border:1px solid #CCC; padding:6px 10px; background:none; cursor:pointer; font-size:0.55rem; letter-spacing:0.1em; transition: 0.3s; }
+    button { border:1px solid #CCC; padding:6px 10px; background:none; cursor:pointer; font-size:0.55rem; letter-spacing:0.1em; transition: 0.3s; color: var(--ui-text); }
     button:hover { background: #eee; }
     
-    #signature { margin-top: 30px; font-size: 0.7rem; letter-spacing: 0.2em; text-decoration: none; color: var(--ui-text); opacity: 0.7; }
+    #signature { margin-top: 30px; font-size: 0.7rem; letter-spacing: 0.15em; text-decoration: none; color: var(--ui-text); opacity: 0.6; transition: opacity 0.3s ease; }
     #signature:hover { opacity: 1; }
 </style>
 </head>
@@ -50,13 +50,13 @@
         <div class="buttons">
             <button id="mode-btn">CHANGE SHAPE</button>
             <button id="palette-btn">RANDOM PALETTE</button>
-            <button id="record-btn" style="color: #a33;">RECORD</button>
+            <button id="record-btn" style="color: #a33; border-color: #a33;">RECORD</button>
         </div>
         <p style="font-size: 0.5rem; opacity: 0.6;">* To start recording from the beginning, click RECORD then BACK TO START.</p>
     </div>
 </div>
 
-<a id="signature" href="https://ryu-yabana.github.io/" target="_blank">RYU YABANA &rarr;</a>
+<a id="signature" href="https://ryu-yabana.github.io/" target="_blank">Ryu Yabana ↗</a>
 
 <script>
 const canvas=document.getElementById('visualizer');
@@ -66,12 +66,11 @@ const scaleSlider = document.getElementById('scale-slider');
 const diffSlider = document.getElementById('diff-slider');
 
 function resize(){
-    canvas.width=1920; // Internal resolution 16:9
+    canvas.width=1920; 
     canvas.height=1080;
 }
 resize();
 
-// AUDIO SYSTEM
 let audioCtx, analyser, dataArray, sourceNode, audioTag;
 function initAudio() {
     if (!audioCtx) {
@@ -110,14 +109,13 @@ function getLevels(){
     return {low: l/(third*255), mid: m/(third*255), high: h/(third*255)};
 }
 
-// VISUALS
 const palettes=[
     ['#FADADD','#F6C6C6','#FFF0F5'], ['#1A1A1B','#3C3C3C','#707070'],
     ['#A8DADC','#457B9D','#1D3557'], ['#D4A373','#CCD5AE','#E9EDC9'],
     ['#E0FBFC','#C2DFE3','#5C6B73'], ['#264653','#2A9D8F','#E9C46A']
 ];
 let palette=palettes[0];
-let mode=0; // 0: Circles, 1: Squares, 2: Lines
+let mode=0; 
 
 document.getElementById('palette-btn').onclick=()=>{ palette=palettes[Math.floor(Math.random()*palettes.length)]; };
 document.getElementById('mode-btn').onclick=()=>{ mode=(mode+1)%3; };
@@ -151,11 +149,11 @@ function draw(){
         ctx.fillStyle = palette[i % palette.length];
         ctx.globalAlpha = 0.1 + (levels.high * 0.8);
 
-        if(mode === 0) { // Circles
+        if(mode === 0) { 
             ctx.arc(p.x, p.y, currentSize, 0, Math.PI*2);
-        } else if (mode === 1) { // Squares
+        } else if (mode === 1) { 
             ctx.rect(p.x - currentSize, p.y - currentSize, currentSize*2, currentSize*2);
-        } else { // Lines/Abstract
+        } else { 
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p.x + (levels.mid * 400), p.y + (levels.high * 400));
             ctx.lineWidth = levels.low * 10;
@@ -177,7 +175,6 @@ function draw(){
 }
 draw();
 
-// RECORDING ENGINE
 let recorder, chunks=[];
 let recording=false;
 
